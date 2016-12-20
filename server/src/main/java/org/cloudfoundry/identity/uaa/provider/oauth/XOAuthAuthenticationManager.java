@@ -30,6 +30,7 @@ import org.cloudfoundry.identity.uaa.user.UaaUser;
 import org.cloudfoundry.identity.uaa.user.UaaUserPrototype;
 import org.cloudfoundry.identity.uaa.util.JsonUtils;
 import org.cloudfoundry.identity.uaa.util.TokenValidation;
+import org.cloudfoundry.identity.uaa.util.UaaStringUtils;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -105,9 +106,8 @@ public class XOAuthAuthenticationManager extends ExternalLoginAuthenticationMana
             }
 
             authenticationData.setUsername(username);
-
-            authenticationData.setAuthorities(extractXOAuthUserAuthorities(attributeMappings, claims));
-
+            Collection<String> groupWhiteList = config.getExternalGroupsWhitelist();
+            authenticationData.setAuthorities(extractXOAuthUserAuthorities(attributeMappings, claims, groupWhiteList));
             return authenticationData;
         }
 
@@ -158,7 +158,7 @@ public class XOAuthAuthenticationManager extends ExternalLoginAuthenticationMana
         return null;
     }
 
-    private List<? extends GrantedAuthority> extractXOAuthUserAuthorities(Map<String, Object> attributeMappings , Map<String, Object> claims) {
+    protected List<? extends GrantedAuthority> extractXOAuthUserAuthorities(Map<String, Object> attributeMappings, Map<String, Object> claims, Collection<String> groupWhiteList) {
         List<String> groupNames = new LinkedList<>();
         if (attributeMappings.get(GROUP_ATTRIBUTE_NAME) instanceof String) {
             groupNames.add((String) attributeMappings.get(GROUP_ATTRIBUTE_NAME));
@@ -175,6 +175,9 @@ public class XOAuthAuthenticationManager extends ExternalLoginAuthenticationMana
                 scopes.addAll((Collection<? extends String>) roles);
             }
         }
+        logger.debug("Filtering XOauth scopes:"+scopes);
+        scopes = UaaStringUtils.retainAllMatches(scopes, groupWhiteList);
+        logger.debug("Filtered XOauth scopes:"+scopes);
 
         List<XOAuthUserAuthority> authorities = new ArrayList<>();
         for (String scope : scopes) {
