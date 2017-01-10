@@ -188,9 +188,7 @@ public class XOAuthAuthenticationManagerTest {
 
         config.setExternalGroupsWhitelist(
             Arrays.asList(
-                "*",
-                "*.*",
-                "*.*.*"
+                "*"
             )
         );
     }
