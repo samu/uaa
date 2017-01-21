@@ -3,9 +3,8 @@ package org.cloudfoundry.identity.uaa.mock.zones;
 import org.cloudfoundry.identity.uaa.mock.InjectedMockContextTest;
 import org.cloudfoundry.identity.uaa.test.TestClient;
 import org.cloudfoundry.identity.uaa.util.JsonUtils;
-import org.cloudfoundry.identity.uaa.zone.BrandingInformation;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneConfiguration;
+import org.cloudfoundry.identity.uaa.zone.SamlConfig;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.http.HttpStatus;
@@ -71,14 +70,48 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
     private static final String PROMPTS_TYPE_DESC = "What kind of field this is (e.g. text or password)";
     private static final String PROMPTS_TEXT_DESC = "Actual text displayed on prompt for field";
     private static final String IDP_DISCOVERY_ENABLED_FLAG = "IDP Discovery should be set to true if you have configured more than one identity provider for UAA. The discovery relies on email domain being set for each additional provider";
-    private static final String BRANDING_COMPANY_NAME_DESC = "This name is used on the UAA Pages and in account management related communication in UAA";
-    private static final String BRANDING_PRODUCT_LOGO_DESC = "This is a base64 encoded PNG image which will be used as the logo on all UAA pages like Login, Sign Up etc.";
-    private static final String BRANDING_SQUARE_LOGO_DESC = "This is a base64 encoded PNG image which will be used as the favicon for the UAA pages";
-    private static final String BRANDING_FOOTER_LEGAL_TEXT_DESC = "This text appears on the footer of all UAA pages";
-    private static final String BRANDING_FOOTER_LINKS_DESC = "These links appear on the footer of all UAA pages. You may choose to add multiple urls for things like Support, Terms of Service etc.";
-
     private TestClient testClient;
 
+    private static final String SERVICE_PROVIDER_KEY =
+            "-----BEGIN RSA PRIVATE KEY-----\n" +
+                    "MIICXQIBAAKBgQDHtC5gUXxBKpEqZTLkNvFwNGnNIkggNOwOQVNbpO0WVHIivig5\n" +
+                    "L39WqS9u0hnA+O7MCA/KlrAR4bXaeVVhwfUPYBKIpaaTWFQR5cTR1UFZJL/OF9vA\n" +
+                    "fpOwznoD66DDCnQVpbCjtDYWX+x6imxn8HCYxhMol6ZnTbSsFW6VZjFMjQIDAQAB\n" +
+                    "AoGAVOj2Yvuigi6wJD99AO2fgF64sYCm/BKkX3dFEw0vxTPIh58kiRP554Xt5ges\n" +
+                    "7ZCqL9QpqrChUikO4kJ+nB8Uq2AvaZHbpCEUmbip06IlgdA440o0r0CPo1mgNxGu\n" +
+                    "lhiWRN43Lruzfh9qKPhleg2dvyFGQxy5Gk6KW/t8IS4x4r0CQQD/dceBA+Ndj3Xp\n" +
+                    "ubHfxqNz4GTOxndc/AXAowPGpge2zpgIc7f50t8OHhG6XhsfJ0wyQEEvodDhZPYX\n" +
+                    "kKBnXNHzAkEAyCA76vAwuxqAd3MObhiebniAU3SnPf2u4fdL1EOm92dyFs1JxyyL\n" +
+                    "gu/DsjPjx6tRtn4YAalxCzmAMXFSb1qHfwJBAM3qx3z0gGKbUEWtPHcP7BNsrnWK\n" +
+                    "vw6By7VC8bk/ffpaP2yYspS66Le9fzbFwoDzMVVUO/dELVZyBnhqSRHoXQcCQQCe\n" +
+                    "A2WL8S5o7Vn19rC0GVgu3ZJlUrwiZEVLQdlrticFPXaFrn3Md82ICww3jmURaKHS\n" +
+                    "N+l4lnMda79eSp3OMmq9AkA0p79BvYsLshUJJnvbk76pCjR28PK4dV1gSDUEqQMB\n" +
+                    "qy45ptdwJLqLJCeNoR0JUcDNIRhOCuOPND7pcMtX6hI/\n" +
+                    "-----END RSA PRIVATE KEY-----";
+
+    private static final String SERVICE_PROVIDER_KEY_PASSWORD = "password";
+
+    private static final String SERVICE_PROVIDER_CERTIFICATE =
+            "-----BEGIN CERTIFICATE-----\n" +
+                    "MIIDSTCCArKgAwIBAgIBADANBgkqhkiG9w0BAQQFADB8MQswCQYDVQQGEwJhdzEO\n" +
+                    "MAwGA1UECBMFYXJ1YmExDjAMBgNVBAoTBWFydWJhMQ4wDAYDVQQHEwVhcnViYTEO\n" +
+                    "MAwGA1UECxMFYXJ1YmExDjAMBgNVBAMTBWFydWJhMR0wGwYJKoZIhvcNAQkBFg5h\n" +
+                    "cnViYUBhcnViYS5hcjAeFw0xNTExMjAyMjI2MjdaFw0xNjExMTkyMjI2MjdaMHwx\n" +
+                    "CzAJBgNVBAYTAmF3MQ4wDAYDVQQIEwVhcnViYTEOMAwGA1UEChMFYXJ1YmExDjAM\n" +
+                    "BgNVBAcTBWFydWJhMQ4wDAYDVQQLEwVhcnViYTEOMAwGA1UEAxMFYXJ1YmExHTAb\n" +
+                    "BgkqhkiG9w0BCQEWDmFydWJhQGFydWJhLmFyMIGfMA0GCSqGSIb3DQEBAQUAA4GN\n" +
+                    "ADCBiQKBgQDHtC5gUXxBKpEqZTLkNvFwNGnNIkggNOwOQVNbpO0WVHIivig5L39W\n" +
+                    "qS9u0hnA+O7MCA/KlrAR4bXaeVVhwfUPYBKIpaaTWFQR5cTR1UFZJL/OF9vAfpOw\n" +
+                    "znoD66DDCnQVpbCjtDYWX+x6imxn8HCYxhMol6ZnTbSsFW6VZjFMjQIDAQABo4Ha\n" +
+                    "MIHXMB0GA1UdDgQWBBTx0lDzjH/iOBnOSQaSEWQLx1syGDCBpwYDVR0jBIGfMIGc\n" +
+                    "gBTx0lDzjH/iOBnOSQaSEWQLx1syGKGBgKR+MHwxCzAJBgNVBAYTAmF3MQ4wDAYD\n" +
+                    "VQQIEwVhcnViYTEOMAwGA1UEChMFYXJ1YmExDjAMBgNVBAcTBWFydWJhMQ4wDAYD\n" +
+                    "VQQLEwVhcnViYTEOMAwGA1UEAxMFYXJ1YmExHTAbBgkqhkiG9w0BCQEWDmFydWJh\n" +
+                    "QGFydWJhLmFyggEAMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEEBQADgYEAYvBJ\n" +
+                    "0HOZbbHClXmGUjGs+GS+xC1FO/am2suCSYqNB9dyMXfOWiJ1+TLJk+o/YZt8vuxC\n" +
+                    "KdcZYgl4l/L6PxJ982SRhc83ZW2dkAZI4M0/Ud3oePe84k8jm3A7EvH5wi5hvCkK\n" +
+                    "RpuRBwn3Ei+jCRouxTbzKPsuCVB+1sNyxMTXzf0=\n" +
+                    "-----END CERTIFICATE-----\n";
     @Before
     public void setUp() throws Exception {
         if (testClient == null) {
@@ -102,8 +135,11 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
         Map<String, String> keys = new HashMap<>();
         keys.put("exampleKeyId", "s1gNiNg.K3y/t3XT");
         identityZone.getConfig().getTokenPolicy().setKeys(keys);
-        IdentityZoneConfiguration brandingConfig = setBranding(identityZone.getConfig());
-        identityZone.setConfig(brandingConfig);
+        SamlConfig samlConfig = new SamlConfig();
+        samlConfig.setCertificate(SERVICE_PROVIDER_CERTIFICATE);
+        samlConfig.setPrivateKey(SERVICE_PROVIDER_KEY);
+        samlConfig.setPrivateKeyPassword(SERVICE_PROVIDER_KEY_PASSWORD);
+        identityZone.getConfig().setSamlConfig(samlConfig);
 
         FieldDescriptor[] fieldDescriptors = {
             fieldWithPath("id").description(ID_DESC).attributes(key("constraints").value("Optional")),
@@ -142,12 +178,6 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
 
             fieldWithPath("config.idpDiscoveryEnabled").description(IDP_DISCOVERY_ENABLED_FLAG).attributes(key("constraints").value("Optional")),
 
-            fieldWithPath("config.branding.companyName").description(BRANDING_COMPANY_NAME_DESC).attributes(key("constraints").value("Optional")),
-            fieldWithPath("config.branding.productLogo").description(BRANDING_PRODUCT_LOGO_DESC).attributes(key("constraints").value("Optional")),
-            fieldWithPath("config.branding.squareLogo").description(BRANDING_SQUARE_LOGO_DESC).attributes(key("constraints").value("Optional")),
-            fieldWithPath("config.branding.footerLegalText").description(BRANDING_FOOTER_LEGAL_TEXT_DESC).attributes(key("constraints").value("Optional")),
-            fieldWithPath("config.branding.footerLinks").description(BRANDING_FOOTER_LINKS_DESC).attributes(key("constraints").value("Optional")),
-
             fieldWithPath("created").ignored(),
             fieldWithPath("last_modified").ignored()
         };
@@ -159,12 +189,12 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
                 .content(JsonUtils.writeValueAsString(identityZone)))
             .andExpect(status().is(HttpStatus.CREATED.value()))
             .andDo(document("{ClassName}/{methodName}",
-                  preprocessRequest(prettyPrint()),
-                  preprocessResponse(prettyPrint()),
-                  requestHeaders(
+                preprocessRequest(prettyPrint()),
+                preprocessResponse(prettyPrint()),
+                requestHeaders(
                     headerWithName("Authorization").description("Bearer token containing `zones.write` or `zones.<zone id>.admin`")
-                  ),
-                  requestFields(fieldDescriptors),
+                ),
+                requestFields(fieldDescriptors),
                 getResponseFields()
             ));
     }
@@ -225,9 +255,6 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
             fieldWithPath("[].config.samlConfig.requestSigned").description(REQUEST_SIGNED_DESC),
             fieldWithPath("[].config.samlConfig.wantAuthnRequestSigned").description(WANT_AUTHN_REQUEST_SIGNED_DESC),
             fieldWithPath("[].config.samlConfig.assertionTimeToLiveSeconds").description(ASSERTION_TIME_TO_LIVE_SECONDS_DESC),
-            fieldWithPath("[].config.samlConfig.certificate").type(STRING).description(CERTIFICATE_DESC),
-            fieldWithPath("[].config.samlConfig.privateKey").type(STRING).description(PRIVATE_KEY_DESC),
-            fieldWithPath("[].config.samlConfig.privateKeyPassword").type(STRING).description(PRIVATE_KEY_PASSWORD_DESC),
 
             fieldWithPath("[].config.links.logout.redirectUrl").description(REDIRECT_URL_DESC),
             fieldWithPath("[].config.links.logout.redirectParameterName").description(REDIRECT_PARAMETER_NAME_DESC),
@@ -243,12 +270,6 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
             fieldWithPath("[].config.prompts[].text").description(PROMPTS_TEXT_DESC),
 
             fieldWithPath("[].config.idpDiscoveryEnabled").description(IDP_DISCOVERY_ENABLED_FLAG),
-
-            fieldWithPath("[].config.branding.companyName").description(BRANDING_COMPANY_NAME_DESC).attributes(key("constraints").value("Optional")),
-            fieldWithPath("[].config.branding.productLogo").description(BRANDING_PRODUCT_LOGO_DESC).attributes(key("constraints").value("Optional")),
-            fieldWithPath("[].config.branding.squareLogo").description(BRANDING_SQUARE_LOGO_DESC).attributes(key("constraints").value("Optional")),
-            fieldWithPath("[].config.branding.footerLegalText").description(BRANDING_FOOTER_LEGAL_TEXT_DESC).attributes(key("constraints").value("Optional")),
-            fieldWithPath("[].config.branding.footerLinks").description(BRANDING_FOOTER_LINKS_DESC).attributes(key("constraints").value("Optional")),
 
             fieldWithPath("[].created").ignored(),
             fieldWithPath("[].last_modified").ignored()
@@ -284,8 +305,11 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
         Map<String, String> keys = new HashMap<>();
         keys.put("updatedKeyId", "upD4t3d.s1gNiNg.K3y/t3XT");
         updatedIdentityZone.getConfig().getTokenPolicy().setKeys(keys);
-        IdentityZoneConfiguration brandingConfig = setBranding(updatedIdentityZone.getConfig());
-        updatedIdentityZone.setConfig(brandingConfig);
+        SamlConfig samlConfig = new SamlConfig();
+        samlConfig.setPrivateKey(SERVICE_PROVIDER_KEY);
+        samlConfig.setPrivateKeyPassword(SERVICE_PROVIDER_KEY_PASSWORD);
+        samlConfig.setCertificate(SERVICE_PROVIDER_CERTIFICATE);
+        updatedIdentityZone.getConfig().setSamlConfig(samlConfig);
 
         Snippet requestFields = requestFields(
             fieldWithPath("subdomain").description(SUBDOMAIN_DESC).attributes(key("constraints").value("Required")),
@@ -322,12 +346,6 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
             fieldWithPath("config.prompts[].text").description(PROMPTS_TEXT_DESC).attributes(key("constraints").value("Optional")),
 
             fieldWithPath("config.idpDiscoveryEnabled").description(IDP_DISCOVERY_ENABLED_FLAG).attributes(key("constraints").value("Optional")),
-
-            fieldWithPath("config.branding.companyName").description(BRANDING_COMPANY_NAME_DESC).attributes(key("constraints").value("Optional")),
-            fieldWithPath("config.branding.productLogo").description(BRANDING_PRODUCT_LOGO_DESC).attributes(key("constraints").value("Optional")),
-            fieldWithPath("config.branding.squareLogo").description(BRANDING_SQUARE_LOGO_DESC).attributes(key("constraints").value("Optional")),
-            fieldWithPath("config.branding.footerLegalText").description(BRANDING_FOOTER_LEGAL_TEXT_DESC).attributes(key("constraints").value("Optional")),
-            fieldWithPath("config.branding.footerLinks").description(BRANDING_FOOTER_LINKS_DESC).attributes(key("constraints").value("Optional")),
 
             fieldWithPath("created").ignored(),
             fieldWithPath("last_modified").ignored()
@@ -386,14 +404,10 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
             "identitysecret",
             "zones.write");
 
-        IdentityZone identityZone = new IdentityZone();
-        identityZone.setId(id);
-        identityZone.setSubdomain(StringUtils.hasText(id) ? id : new RandomValueStringGenerator().generate());
-        identityZone.setName("The Twiglet Zone");
-
-        IdentityZoneConfiguration brandingConfig = setBranding(identityZone.getConfig());
-        identityZone.setConfig(brandingConfig);
-
+        Map<String, String> identityZone = new HashMap<>();
+        identityZone.put("id", id);
+        identityZone.put("subdomain", StringUtils.hasText(id) ? id : new RandomValueStringGenerator().generate());
+        identityZone.put("name", "The Twiglet Zone");
 
         getMockMvc().perform(
             post("/identity-zones")
@@ -421,9 +435,6 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
             fieldWithPath("config.samlConfig.requestSigned").description(REQUEST_SIGNED_DESC),
             fieldWithPath("config.samlConfig.wantAuthnRequestSigned").description(WANT_AUTHN_REQUEST_SIGNED_DESC),
             fieldWithPath("config.samlConfig.assertionTimeToLiveSeconds").description(ASSERTION_TIME_TO_LIVE_SECONDS_DESC),
-            fieldWithPath("config.samlConfig.certificate").type(STRING).description(CERTIFICATE_DESC),
-            fieldWithPath("config.samlConfig.privateKey").type(STRING).description(PRIVATE_KEY_DESC),
-            fieldWithPath("config.samlConfig.privateKeyPassword").type(STRING).description(PRIVATE_KEY_PASSWORD_DESC),
 
             fieldWithPath("config.links.logout.redirectUrl").description(REDIRECT_URL_DESC),
             fieldWithPath("config.links.logout.redirectParameterName").description(REDIRECT_PARAMETER_NAME_DESC),
@@ -439,25 +450,9 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
             fieldWithPath("config.prompts[].text").description(PROMPTS_TEXT_DESC),
 
             fieldWithPath("config.idpDiscoveryEnabled").description(IDP_DISCOVERY_ENABLED_FLAG),
-            fieldWithPath("config.branding.companyName").description(BRANDING_COMPANY_NAME_DESC),
-            fieldWithPath("config.branding.productLogo").description(BRANDING_PRODUCT_LOGO_DESC),
-            fieldWithPath("config.branding.squareLogo").description(BRANDING_SQUARE_LOGO_DESC),
-            fieldWithPath("config.branding.footerLegalText").description(BRANDING_FOOTER_LEGAL_TEXT_DESC),
-            fieldWithPath("config.branding.footerLinks").description(BRANDING_FOOTER_LINKS_DESC),
 
             fieldWithPath("created").ignored(),
             fieldWithPath("last_modified").ignored()
         );
-    }
-
-    private IdentityZoneConfiguration setBranding(IdentityZoneConfiguration config){
-        BrandingInformation branding = new BrandingInformation();
-        branding.setCompanyName("Test Company");
-        branding.setProductLogo("VGVzdFByb2R1Y3RMb2dv");
-        branding.setSquareLogo("VGVzdFNxdWFyZUxvZ28=");
-        branding.setFooterLegalText("Test footer legal text");
-        branding.setFooterLinks(new HashMap<>());
-        config.setBranding(branding);
-        return config;
     }
 }
