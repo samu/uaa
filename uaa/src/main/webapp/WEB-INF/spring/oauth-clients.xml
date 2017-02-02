@@ -60,7 +60,7 @@
                     </entry>
                     <entry key="cf">
                         <map>
-                            <entry key="authorized-grant-types" value="implicit,password,refresh_token" />
+                            <entry key="authorized-grant-types" value="password,refresh_token" />
                             <entry key="scope"
                                 value="uaa.user,cloud_controller.read,cloud_controller.write,openid,password.write,scim.userids,cloud_controller.admin,scim.read,scim.write" />
                             <entry key="authorities" value="uaa.none" />
@@ -79,6 +79,7 @@
                                     <value>openid</value>
                                 </list>
                             </entry>
+                            <entry key="redirect-uri" value="http://localhost:8080/app/" />
                             <entry key="signup_redirect_url" value="http://localhost:8080/app/" />
                             <entry key="change_email_redirect_url" value="http://localhost:8080/app/" />
                             <entry key="name" value="The Ultimate Oauth App" />
@@ -91,6 +92,7 @@
                             <entry key="authorized-grant-types" value="client_credentials,authorization_code" />
                             <entry key="authorities" value="oauth.login,scim.write,clients.read,notifications.write,critical_notifications.write,emails.write,scim.userids,password.write,idps.write" />
                             <entry key="autoapprove" value="true" />
+                            <entry key="redirect-uri" value="http://localhost:8080/login/" />
                         </map>
                     </entry>
                     <entry key="dashboard">
@@ -99,6 +101,7 @@
                             <entry key="scope" value="dashboard.user,openid" />
                             <entry key="authorized-grant-types" value="authorization_code" />
                             <entry key="authorities" value="uaa.resource" />
+                            <entry key="redirect-uri" value="http://localhost:8080/dashboard/" />
                         </map>
                     </entry>
                     <entry key="notifications">
@@ -115,6 +118,7 @@
                             <entry key="scope" value="cloud_controller.admin,cloud_controller.read,cloud_controller.write,openid,zones.*.*,zones.*.*.*,zones.read,zones.write" />
                             <entry key="authorities" value="scim.zones,zones.read,cloud_controller.read,uaa.resource,zones.write" />
                             <entry key="autoapprove" value="true" />
+                            <entry key="redirect-uri" value="http://localhost:8080/identity/" />
                         </map>
                     </entry>
                     <entry key="oauth_showcase_authorization_code">
@@ -128,6 +132,7 @@
                                     <value>uaa</value>
                                 </array>
                             </entry>
+                            <entry key="redirect-uri" value="http://localhost:8080/showcase/" />
                         </map>
                     </entry>
                     <entry key="oauth_showcase_client_credentials">
@@ -151,6 +156,7 @@
                             <entry key="authorized-grant-types" value="implicit" />
                             <entry key="scope" value="openid" />
                             <entry key="authorities" value="uaa.resource" />
+                            <entry key="redirect-uri" value="http://localhost:8080/showcase/" />
                         </map>
                     </entry>
                     <entry key="oauth_showcase_user_token">
